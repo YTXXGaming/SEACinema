@@ -174,16 +174,17 @@ const App = () => {
         </div>
 
         {/* Events Grid */}
-        <div className="p-4 grid gap-4 pb-24">
-          {filteredEvents.map((event: AppEvent) => (
-            <div
-              key={event.id}
-              onClick={() => {
-                setSelectedEvent(event);
-                setCurrentPage('details');
-              }}
-              className="bg-gray-800 rounded-2xl overflow-hidden shadow-xl hover:shadow-pink-500/20 transition-all cursor-pointer"
-            >
+<div className="p-4 grid gap-4 pb-24">
+  {filteredEvents.map((event: AppEvent) => (
+    <div
+      key={event.id}
+      onClick={() => {
+        setSelectedEvent({...event});  // ⭐ Spread to match AppEvent type
+        setCurrentPage('details');
+      }}
+      className="bg-gray-800 rounded-2xl overflow-hidden shadow-xl hover:shadow-pink-500/20 transition-all cursor-pointer"
+    >
+
               {/* Poster Placeholder */}
               <div className="relative w-full aspect-video">
             <img
