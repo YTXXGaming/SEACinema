@@ -395,7 +395,7 @@ const App: React.FC = () => {
       const ticket: Ticket = {
         id: Date.now(),
         eventTitle: selectedAppEvent.title,
-        userName: formData.name.trim() || 'Gost',
+        userName: formData.name.trim() || 'Amila Agincic',
         date: formData.date,
         time: selectedAppEvent.time,
         location: selectedAppEvent.location,
