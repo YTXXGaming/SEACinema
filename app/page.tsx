@@ -179,7 +179,7 @@ const App = () => {
     <div
       key={event.id}
       onClick={() => {
-        setSelectedEvent(event as AppEvent);
+        setSelectedEvent(event as unknown as AppEvent);
         setCurrentPage('details');
       }}
       className="bg-gray-800 rounded-2xl overflow-hidden shadow-xl hover:shadow-pink-500/20 transition-all cursor-pointer"
