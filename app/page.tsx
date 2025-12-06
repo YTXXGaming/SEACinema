@@ -105,7 +105,7 @@ const EVENTS_DB = [
 
 const App = () => {
   const [currentPage, setCurrentPage] = useState('home');
-  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [tickets, setTickets] = useState([]);
   const [currentTicket, setCurrentTicket] = useState(null);
   const [showPaymentPopup, setShowPaymentPopup] = useState(false);
