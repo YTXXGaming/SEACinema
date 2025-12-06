@@ -57,7 +57,7 @@ const EVENTS_DB = [
     title: "Putovanje Kroz Vrijeme",
     type: "film",
     genre: "Naučna Fantastika",
-    description: "Kada vrijeme stane za dvoje ljudi, ništa nije nemoguće. Film koji istražuje šta znači pronaći osobu sa kojom svaki trenutak postaje vječnost.",
+    description: "Kada vrijeme stane za dvoje ljudi, ništa nije nemoguće. Film koji istražuje šta znači pronaći osobu sa kojim svaki trenutak postaje vječnost.",
     location: "SEA Cinema Hall 2",
     date: "2025-12-15",
     time: "18:00",
@@ -103,9 +103,26 @@ const EVENTS_DB = [
 // KOMPONENTE
 // ============================================
 
+interface AppEvent {
+  id: number;
+  title: string;
+  type: string;
+  genre: string;
+  description: string;
+  location: string;
+  date: string;
+  time: string;
+  duration: string;
+  prices: { standard: number; vip: number; premium: number; };
+  rating: number;
+  message: string;
+  posterUrl: string;
+  selectedTier?: string;
+}
+
 const App = () => {
-  const [currentPage, setCurrentPage] = useState('home');
-  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [currentPage, setCurrentPage] = useState<string>('home');
+  const [selectedEvent, setSelectedEvent] = useState<AppEvent | null>(null);
   const [tickets, setTickets] = useState([]);
   const [currentTicket, setCurrentTicket] = useState(null);
   const [showPaymentPopup, setShowPaymentPopup] = useState(false);
@@ -116,8 +133,8 @@ const App = () => {
   const HomePage = () => {
     const [filter, setFilter] = useState('all');
 
-    const filteredEvents = filter === 'all' 
-      ? EVENTS_DB 
+    const filteredEvents = filter === 'all'
+      ? EVENTS_DB
       : EVENTS_DB.filter(e => e.type === filter);
 
     return (
@@ -158,7 +175,7 @@ const App = () => {
 
         {/* Events Grid */}
         <div className="p-4 grid gap-4 pb-24">
-          {filteredEvents.map(event => (
+          {filteredEvents.map((event: AppEvent) => (
             <div
               key={event.id}
               onClick={() => {
@@ -169,13 +186,13 @@ const App = () => {
             >
               {/* Poster Placeholder */}
               <div className="relative w-full aspect-video">
-            <img 
-              src={event.posterUrl} 
+            <img
+              src={event.posterUrl}
               alt={event.title}
               className="w-full h-full object-cover"
                />
               </div>
-              
+
               {/* Event Info */}
               <div className="p-4">
                 <div className="flex items-center gap-2 mb-2">
@@ -208,7 +225,7 @@ const App = () => {
             <Star size={24} />
             <span className="text-xs">Početna</span>
           </button>
-          <button 
+          <button
             onClick={() => setCurrentPage('tickets')}
             className="flex flex-col items-center gap-1 text-gray-400"
           >
@@ -228,7 +245,7 @@ const App = () => {
 
   return (
     <div className="min-h-screen bg-gray-900">
-      
+
       {/* Header */}
       <div className="sticky top-0 z-10 bg-gray-900/95 backdrop-blur-sm border-b border-gray-800 p-4 flex items-center gap-3">
         <button onClick={() => setCurrentPage('home')} className="text-white">
@@ -311,11 +328,11 @@ const App = () => {
                 { key: 'standard', label: 'Standard', desc: 'Klasično iskustvo' },
                 { key: 'vip', label: 'VIP', desc: 'Premium sjedišta' },
                 { key: 'premium', label: 'Love Premium', desc: 'Za posebne trenutke ❤️' }
-              ].map(tier => (
+              ].map((tier: {key: string; label: string; desc: string}) => (
                 <button
                   key={tier.key}
                   onClick={() => {
-                    setSelectedEvent({ ...selectedEvent, selectedTier: tier.key });
+                    setSelectedEvent({ ...selectedEvent!, selectedTier: tier.key });
                     setCurrentPage('checkout');
                   }}
                   className="w-full bg-gray-800 hover:bg-gray-700 rounded-xl p-4 flex items-center justify-between"
@@ -360,15 +377,15 @@ const App = () => {
     const generateTicket = () => {
   const ticket = {
     id: Date.now(),
-    eventTitle: selectedEvent.title,
+    eventTitle: selectedEvent!.title,
     userName: formData.name.trim(),   // ⭐ ALWAYS store name
     date: formData.date,
-    time: selectedEvent.time,
-    location: selectedEvent.location,
+    time: selectedEvent!.time,
+    location: selectedEvent!.location,
     seat: `${String.fromCharCode(65 + Math.floor(Math.random() * 10))}${Math.floor(Math.random() * 20) + 1}`,
     ticketNumber: `SEA-${Date.now().toString().slice(-6)}`,
-    tier: selectedEvent.selectedTier || 'standard',     // ⭐ fallback to avoid crash
-    price: selectedEvent.prices[selectedEvent.selectedTier] || 0, // ⭐ fallback
+    tier: selectedEvent!.selectedTier || 'standard',     // ⭐ fallback to avoid crash
+    price: selectedEvent!.prices[selectedEvent!.selectedTier!] || 0, // ⭐ fallback
     qrCode: `SEA-${Date.now()}`
   };
 
@@ -392,11 +409,11 @@ const App = () => {
         <div className="p-6">
           {/* Event Summary */}
           <div className="bg-gray-800 rounded-xl p-4 mb-6">
-            <h3 className="text-white font-bold mb-2">{selectedEvent.title}</h3>
+            <h3 className="text-white font-bold mb-2">{selectedEvent!.title}</h3>
             <div className="space-y-1 text-sm text-gray-400">
-              <p>{new Date(selectedEvent.date).toLocaleDateString('bs-BA')} • {selectedEvent.time}</p>
+              <p>{new Date(selectedEvent!.date).toLocaleDateString('bs-BA')} • {selectedEvent!.time}</p>
               <p className="text-pink-400 font-medium capitalize">
-                {selectedEvent.selectedTier} - {selectedEvent.prices[selectedEvent.selectedTier]}€
+                {selectedEvent!.selectedTier} - {selectedEvent!.prices[selectedEvent!.selectedTier!]}€
               </p>
             </div>
           </div>
@@ -442,7 +459,7 @@ const App = () => {
                 type="date"
                 value={formData.date}
                 onChange={(e) => setFormData({...formData, date: e.target.value})}
-                min={selectedEvent.date}
+                min={selectedEvent!.date}
                 className="w-full bg-gray-800 text-white rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-500"
               />
             </div>
@@ -451,7 +468,7 @@ const App = () => {
               onClick={handleSubmit}
               className="w-full bg-gradient-to-r from-pink-500 to-purple-500 text-white font-bold py-4 rounded-xl hover:shadow-lg hover:shadow-pink-500/50 transition-all mt-8"
             >
-              Plati {selectedEvent.prices[selectedEvent.selectedTier]}€
+              Plati {selectedEvent!.prices[selectedEvent!.selectedTier!]}€
             </button>
           </div>
         </div>
@@ -626,7 +643,7 @@ const App = () => {
 
         {/* Bottom Nav */}
         <div className="fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-800 p-4 flex justify-around">
-          <button 
+          <button
             onClick={() => setCurrentPage('home')}
             className="flex flex-col items-center gap-1 text-gray-400"
           >
