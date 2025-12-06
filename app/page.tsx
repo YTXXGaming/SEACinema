@@ -1,10 +1,46 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Heart, Calendar, MapPin, Clock, Star, Ticket, ChevronLeft, QrCode, Download } from 'lucide-react';
+import React, { useState } from 'react';
+import { Heart, Calendar, MapPin, Clock, Star, Ticket, ChevronLeft, QrCode } from 'lucide-react';
 
 // ============================================
-// MOCK DATABASE - Eventi
+// TYPES
+// ============================================
+type TierKey = 'standard' | 'vip' | 'premium';
+
+interface AppEvent {
+  id: number;
+  title: string;
+  type: string;
+  genre: string;
+  description: string;
+  location: string;
+  date: string; // ISO date
+  time: string;
+  duration: string;
+  prices: Record<TierKey, number>;
+  rating: number;
+  message: string;
+  posterUrl: string;
+  selectedTier?: TierKey;
+}
+
+interface Ticket {
+  id: number;
+  eventTitle: string;
+  userName: string;
+  date: string;
+  time: string;
+  location: string;
+  seat: string;
+  ticketNumber: string;
+  tier: TierKey;
+  price: number;
+  qrCode: string;
+}
+
+// ============================================
+// MOCK DATABASE - Events
 // ============================================
 const EVENTS_DB: AppEvent[] = [
   {
@@ -100,38 +136,20 @@ const EVENTS_DB: AppEvent[] = [
 ];
 
 // ============================================
-// KOMPONENTE
+// APP
 // ============================================
-
-interface AppEvent {
-  id: number;
-  title: string;
-  type: string;
-  genre: string;
-  description: string;
-  location: string;
-  date: string;
-  time: string;
-  duration: string;
-  prices: { standard: number; vip: number; premium: number; };
-  rating: number;
-  message: string;
-  posterUrl: string;
-  selectedTier?: string;
-}
-
-const App = () => {
-  const [currentPage, setCurrentPage] = useState<string>('home');
-  const [selectedEvent, setSelectedEvent] = useState<AppEvent | null>(null);
-  const [tickets, setTickets] = useState([]);
-  const [currentTicket, setCurrentTicket] = useState(null);
+const App: React.FC = () => {
+  const [currentPage, setCurrentPage] = useState<'home'|'details'|'checkout'|'ticket'|'tickets'>('home');
+  const [selectedAppEvent, setSelectedAppEvent] = useState<AppEvent | null>(null);
+  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [currentTicket, setCurrentTicket] = useState<Ticket | null>(null);
   const [showPaymentPopup, setShowPaymentPopup] = useState(false);
 
   // ============================================
   // HOME PAGE
   // ============================================
-  const HomePage = () => {
-    const [filter, setFilter] = useState('all');
+  const HomePage: React.FC = () => {
+    const [filter, setFilter] = useState<'all' | 'film' | 'predstava' | 'event'>('all');
 
     const filteredEvents = filter === 'all'
       ? EVENTS_DB
@@ -161,9 +179,9 @@ const App = () => {
           ].map(cat => (
             <button
               key={cat.key}
-              onClick={() => setFilter(cat.key)}
+              onClick={() => setFilter(cat.key as any)}
               className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
-                filter === cat.key
+                filter === (cat.key as any)
                   ? 'bg-pink-500 text-white'
                   : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
               }`}
@@ -173,46 +191,46 @@ const App = () => {
           ))}
         </div>
 
-  {/* Events Grid */}
-<div className="p-4 grid gap-4 pb-24">
-  {filteredEvents.map((event: AppEvent) => (
-    <div
-      key={event.id}
-      onClick={() => {
-        setSelectedEvent(event as unknown as AppEvent);
-        setCurrentPage('details');
-      }}
-      className="bg-gray-800 rounded-2xl overflow-hidden shadow-xl hover:shadow-pink-500/20 transition-all cursor-pointer"
-    >
-
-              {/* Poster Placeholder */}
+        {/* Events Grid */}
+        <div className="p-4 grid gap-4 pb-24">
+          {filteredEvents.map((ev) => (
+            <div
+              key={ev.id}
+              onClick={() => {
+                // use a variable name that doesn't shadow DOM Event
+                setSelectedAppEvent(ev);
+                setCurrentPage('details');
+              }}
+              className="bg-gray-800 rounded-2xl overflow-hidden shadow-xl hover:shadow-pink-500/20 transition-all cursor-pointer"
+            >
+              {/* Poster */}
               <div className="relative w-full aspect-video">
-            <img
-              src={event.posterUrl}
-              alt={event.title}
-              className="w-full h-full object-cover"
-               />
+                <img
+                  src={ev.posterUrl}
+                  alt={ev.title}
+                  className="w-full h-full object-cover"
+                />
               </div>
 
               {/* Event Info */}
               <div className="p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="px-2 py-1 bg-pink-500/20 text-pink-300 text-xs rounded-full">
-                    {event.genre}
+                    {ev.genre}
                   </span>
                 </div>
-                <h3 className="text-xl font-bold text-white mb-2">{event.title}</h3>
+                <h3 className="text-xl font-bold text-white mb-2">{ev.title}</h3>
                 <p className="text-gray-400 text-sm line-clamp-2 mb-3">
-                  {event.description}
+                  {ev.description}
                 </p>
                 <div className="flex items-center gap-4 text-gray-400 text-xs">
                   <div className="flex items-center gap-1">
                     <Calendar size={14} />
-                    <span>{new Date(event.date).toLocaleDateString('bs-BA')}</span>
+                    <span>{new Date(ev.date).toLocaleDateString('bs-BA')}</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <Clock size={14} />
-                    <span>{event.time}</span>
+                    <span>{ev.time}</span>
                   </div>
                 </div>
               </div>
@@ -241,83 +259,81 @@ const App = () => {
   // ============================================
   // EVENT DETAILS PAGE
   // ============================================
- const EventDetailsPage = () => {
-  if (!selectedEvent) return null;
+  const EventDetailsPage: React.FC = () => {
+    if (!selectedAppEvent) return null;
 
-  return (
-    <div className="min-h-screen bg-gray-900">
+    const pickTierAndGoToCheckout = (tier: TierKey) => {
+      setSelectedAppEvent({ ...selectedAppEvent, selectedTier: tier });
+      setCurrentPage('checkout');
+    };
 
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-gray-900/95 backdrop-blur-sm border-b border-gray-800 p-4 flex items-center gap-3">
-        <button onClick={() => setCurrentPage('home')} className="text-white">
-          <ChevronLeft size={24} />
-        </button>
-        <h2 className="text-lg font-bold text-white">Detalji</h2>
-      </div>
-
-      {/* Wrapper */}
-      <div>
+    return (
+      <div className="min-h-screen bg-gray-900">
+        {/* Header */}
+        <div className="sticky top-0 z-10 bg-gray-900/95 backdrop-blur-sm border-b border-gray-800 p-4 flex items-center gap-3">
+          <button onClick={() => setCurrentPage('home')} className="text-white">
+            <ChevronLeft size={24} />
+          </button>
+          <h2 className="text-lg font-bold text-white">Detalji</h2>
+        </div>
 
         {/* Poster */}
         <div className="relative w-full aspect-video">
-          <img src={selectedEvent.posterUrl} className="w-full h-full object-cover" />
+          <img src={selectedAppEvent.posterUrl} className="w-full h-full object-cover" alt={selectedAppEvent.title} />
           <div className="absolute bottom-4 right-4 bg-black/70 backdrop-blur-sm px-4 py-2 rounded-full flex items-center gap-2">
             <Star className="text-yellow-400" size={20} fill="currentColor" />
-            <span className="text-white text-lg font-bold">{selectedEvent.rating}</span>
+            <span className="text-white text-lg font-bold">{selectedAppEvent.rating}</span>
           </div>
         </div>
 
         {/* Content */}
         <div className="p-6 space-y-6">
           <div>
-            <h1 className="text-3xl font-bold text-white mb-2">{selectedEvent.title}</h1>
+            <h1 className="text-3xl font-bold text-white mb-2">{selectedAppEvent.title}</h1>
             <span className="inline-block px-3 py-1 bg-pink-500/20 text-pink-300 text-sm rounded-full">
-              {selectedEvent.genre}
+              {selectedAppEvent.genre}
             </span>
           </div>
 
-          {/* Message */}
           <div className="bg-gradient-to-r from-pink-500/10 to-purple-500/10 border border-pink-500/20 rounded-xl p-4">
             <div className="flex items-start gap-3">
               <Heart className="text-pink-400 mt-1 flex-shrink-0" size={20} />
               <p className="text-pink-200 text-sm italic leading-relaxed">
-                {selectedEvent.message}
+                {selectedAppEvent.message}
               </p>
             </div>
           </div>
 
-          {/* Description */}
           <div>
             <h3 className="text-white font-semibold mb-2">O događaju</h3>
-            <p className="text-gray-400">{selectedEvent.description}</p>
+            <p className="text-gray-400">{selectedAppEvent.description}</p>
           </div>
 
-          {/* Info Cards */}
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-gray-800 rounded-xl p-4">
               <MapPin className="text-pink-400 mb-2" size={20} />
               <p className="text-gray-400 text-xs mb-1">Lokacija</p>
-              <p className="text-white text-sm font-medium">{selectedEvent.location}</p>
+              <p className="text-white text-sm font-medium">{selectedAppEvent.location}</p>
             </div>
 
             <div className="bg-gray-800 rounded-xl p-4">
               <Calendar className="text-pink-400 mb-2" size={20} />
               <p className="text-gray-400 text-xs mb-1">Datum</p>
               <p className="text-white text-sm font-medium">
-                {new Date(selectedEvent.date).toLocaleDateString('bs-BA')}
+                {new Date(selectedAppEvent.date).toLocaleDateString('bs-BA')}
               </p>
             </div>
 
             <div className="bg-gray-800 rounded-xl p-4">
               <Clock className="text-pink-400 mb-2" size={20} />
               <p className="text-gray-400 text-xs mb-1">Vrijeme</p>
-              <p className="text-white text-sm font-medium">{selectedEvent.time}</p>
+              <p className="text-white text-sm font-medium">{selectedAppEvent.time}</p>
             </div>
 
             <div className="bg-gray-800 rounded-xl p-4">
               <Star className="text-pink-400 mb-2" size={20} />
               <p className="text-gray-400 text-xs mb-1">Trajanje</p>
-              <p className="text-white text-sm font-medium">{selectedEvent.duration}</p>
+              <p className="text-white text-sm font-medium">{selectedAppEvent.duration}</p>
             </div>
           </div>
 
@@ -326,16 +342,13 @@ const App = () => {
             <h3 className="text-white font-semibold mb-3">Odaberi tip karte</h3>
             <div className="space-y-3">
               {[
-                { key: 'standard', label: 'Standard', desc: 'Klasično iskustvo' },
-                { key: 'vip', label: 'VIP', desc: 'Premium sjedišta' },
-                { key: 'premium', label: 'Love Premium', desc: 'Za posebne trenutke ❤️' }
-              ].map((tier: {key: string; label: string; desc: string}) => (
+                { key: 'standard' as TierKey, label: 'Standard', desc: 'Klasično iskustvo' },
+                { key: 'vip' as TierKey, label: 'VIP', desc: 'Premium sjedišta' },
+                { key: 'premium' as TierKey, label: 'Love Premium', desc: 'Za posebne trenutke ❤️' }
+              ].map((tier) => (
                 <button
                   key={tier.key}
-                  onClick={() => {
-                    setSelectedEvent({ ...selectedEvent!, selectedTier: tier.key });
-                    setCurrentPage('checkout');
-                  }}
+                  onClick={() => pickTierAndGoToCheckout(tier.key)}
                   className="w-full bg-gray-800 hover:bg-gray-700 rounded-xl p-4 flex items-center justify-between"
                 >
                   <div>
@@ -343,7 +356,7 @@ const App = () => {
                     <p className="text-gray-400 text-sm">{tier.desc}</p>
                   </div>
                   <p className="text-pink-400 text-xl font-bold">
-                    {selectedEvent.prices[tier.key]}€
+                    {selectedAppEvent.prices[tier.key]}€
                   </p>
                 </button>
               ))}
@@ -353,20 +366,20 @@ const App = () => {
           <div className="h-20"></div>
         </div>
       </div>
-    </div>
-  );
-};
-
+    );
+  };
 
   // ============================================
   // CHECKOUT PAGE
   // ============================================
-  const CheckoutPage = () => {
+  const CheckoutPage: React.FC = () => {
+    if (!selectedAppEvent) return null;
+
     const [formData, setFormData] = useState({
       name: '',
       email: '',
       phone: '',
-      date: selectedEvent?.date || ''
+      date: selectedAppEvent.date
     });
 
     const handleSubmit = () => {
@@ -376,26 +389,28 @@ const App = () => {
     };
 
     const generateTicket = () => {
-  const ticket = {
-    id: Date.now(),
-    eventTitle: selectedEvent!.title,
-    userName: formData.name.trim(),   // ⭐ ALWAYS store name
-    date: formData.date,
-    time: selectedEvent!.time,
-    location: selectedEvent!.location,
-    seat: `${String.fromCharCode(65 + Math.floor(Math.random() * 10))}${Math.floor(Math.random() * 20) + 1}`,
-    ticketNumber: `SEA-${Date.now().toString().slice(-6)}`,
-    tier: selectedEvent!.selectedTier || 'standard',     // ⭐ fallback to avoid crash
-    price: selectedEvent!.prices[selectedEvent!.selectedTier!] || 0, // ⭐ fallback
-    qrCode: `SEA-${Date.now()}`
-  };
+      const tier = (selectedAppEvent.selectedTier ?? 'standard') as TierKey;
+      const price = selectedAppEvent.prices[tier] ?? 0;
 
-  setTickets(prev => [...prev, ticket]);
-  setCurrentTicket(ticket);
-  setShowPaymentPopup(false);
-  setCurrentPage('ticket');
-};
+      const ticket: Ticket = {
+        id: Date.now(),
+        eventTitle: selectedAppEvent.title,
+        userName: formData.name.trim() || 'Gost',
+        date: formData.date,
+        time: selectedAppEvent.time,
+        location: selectedAppEvent.location,
+        seat: `${String.fromCharCode(65 + Math.floor(Math.random() * 10))}${Math.floor(Math.random() * 20) + 1}`,
+        ticketNumber: `SEA-${Date.now().toString().slice(-6)}`,
+        tier,
+        price,
+        qrCode: `SEA-${Date.now()}`
+      };
 
+      setTickets(prev => [...prev, ticket]);
+      setCurrentTicket(ticket);
+      setShowPaymentPopup(false);
+      setCurrentPage('ticket');
+    };
 
     return (
       <div className="min-h-screen bg-gray-900">
@@ -410,11 +425,11 @@ const App = () => {
         <div className="p-6">
           {/* Event Summary */}
           <div className="bg-gray-800 rounded-xl p-4 mb-6">
-            <h3 className="text-white font-bold mb-2">{selectedEvent!.title}</h3>
+            <h3 className="text-white font-bold mb-2">{selectedAppEvent.title}</h3>
             <div className="space-y-1 text-sm text-gray-400">
-              <p>{new Date(selectedEvent!.date).toLocaleDateString('bs-BA')} • {selectedEvent!.time}</p>
+              <p>{new Date(selectedAppEvent.date).toLocaleDateString('bs-BA')} • {selectedAppEvent.time}</p>
               <p className="text-pink-400 font-medium capitalize">
-                {selectedEvent!.selectedTier} - {selectedEvent!.prices[selectedEvent!.selectedTier!]}€
+                {selectedAppEvent.selectedTier ?? 'standard'} - {selectedAppEvent.prices[selectedAppEvent.selectedTier ?? 'standard']}€
               </p>
             </div>
           </div>
@@ -460,7 +475,7 @@ const App = () => {
                 type="date"
                 value={formData.date}
                 onChange={(e) => setFormData({...formData, date: e.target.value})}
-                min={selectedEvent!.date}
+                min={selectedAppEvent.date}
                 className="w-full bg-gray-800 text-white rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-500"
               />
             </div>
@@ -469,7 +484,7 @@ const App = () => {
               onClick={handleSubmit}
               className="w-full bg-gradient-to-r from-pink-500 to-purple-500 text-white font-bold py-4 rounded-xl hover:shadow-lg hover:shadow-pink-500/50 transition-all mt-8"
             >
-              Plati {selectedEvent!.prices[selectedEvent!.selectedTier!]}€
+              Plati {selectedAppEvent.prices[selectedAppEvent.selectedTier ?? 'standard']}€
             </button>
           </div>
         </div>
@@ -505,21 +520,18 @@ const App = () => {
   // ============================================
   // TICKET PAGE
   // ============================================
-  const TicketPage = () => {
+  const TicketPage: React.FC = () => {
     if (!currentTicket) return null;
 
     return (
       <div className="min-h-screen bg-gray-900 p-6">
         <div className="max-w-sm mx-auto">
-          {/* Header */}
           <div className="text-center mb-6">
             <h2 className="text-2xl font-bold text-white mb-2">Vaša Karta</h2>
             <p className="text-gray-400 text-sm">Spremno za nezaboravno iskustvo</p>
           </div>
 
-          {/* Ticket */}
           <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-3xl overflow-hidden shadow-2xl border border-pink-500/20">
-            {/* Top Section */}
             <div className="bg-gradient-to-r from-pink-500 to-purple-500 p-6 text-center">
               <h3 className="text-2xl font-bold text-white mb-1">
                 {currentTicket.eventTitle}
@@ -527,19 +539,17 @@ const App = () => {
               <p className="text-pink-100 text-sm">SEA Cinema</p>
             </div>
 
-            {/* QR Code */}
             <div className="p-6 flex justify-center">
               <div className="w-48 h-48 bg-white rounded-2xl flex items-center justify-center">
                 <QrCode size={160} className="text-gray-800" />
               </div>
             </div>
 
-            {/* Ticket Info */}
             <div className="px-6 pb-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-gray-500 text-xs mb-1">Ime</p>
-                  <p className="text-white font-medium">Amila Agincic</p>
+                  <p className="text-white font-medium">{currentTicket.userName}</p>
                 </div>
                 <div>
                   <p className="text-gray-500 text-xs mb-1">Sjedalo</p>
@@ -568,7 +578,6 @@ const App = () => {
               </div>
             </div>
 
-            {/* Love Message */}
             <div className="bg-pink-500/10 border-t border-pink-500/20 px-6 py-4">
               <p className="text-pink-200 text-center text-sm italic">
                 Za Amilu i Emira — ljubav je ulaznica. ❤️
@@ -576,7 +585,6 @@ const App = () => {
             </div>
           </div>
 
-          {/* Buttons */}
           <div className="mt-6 space-y-3">
             <button
               onClick={() => setCurrentPage('home')}
@@ -593,7 +601,7 @@ const App = () => {
   // ============================================
   // MY TICKETS PAGE
   // ============================================
-  const MyTicketsPage = () => {
+  const MyTicketsPage: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-900 pb-24">
         <div className="sticky top-0 z-10 bg-gray-900/95 backdrop-blur-sm border-b border-gray-800 p-4">
@@ -613,36 +621,35 @@ const App = () => {
               </button>
             </div>
           ) : (
-            tickets.map(ticket => (
+            tickets.map(t => (
               <div
-                key={ticket.id}
+                key={t.id}
                 onClick={() => {
-                  setCurrentTicket(ticket);
+                  setCurrentTicket(t);
                   setCurrentPage('ticket');
                 }}
                 className="bg-gray-800 rounded-xl p-4 cursor-pointer hover:bg-gray-750 transition-all"
               >
                 <div className="flex items-start justify-between mb-3">
                   <div>
-                    <h3 className="text-white font-bold mb-1">{ticket.eventTitle}</h3>
+                    <h3 className="text-white font-bold mb-1">{t.eventTitle}</h3>
                     <p className="text-gray-400 text-sm">
-                      {new Date(ticket.date).toLocaleDateString('bs-BA')} • {ticket.time}
+                      {new Date(t.date).toLocaleDateString('bs-BA')} • {t.time}
                     </p>
                   </div>
                   <span className="px-3 py-1 bg-pink-500/20 text-pink-300 text-xs rounded-full">
-                    {ticket.seat}
+                    {t.seat}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-500">{ticket.ticketNumber}</span>
-                  <span className="text-pink-400 font-medium capitalize">{ticket.tier}</span>
+                  <span className="text-gray-500">{t.ticketNumber}</span>
+                  <span className="text-pink-400 font-medium capitalize">{t.tier}</span>
                 </div>
               </div>
             ))
           )}
         </div>
 
-        {/* Bottom Nav */}
         <div className="fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-800 p-4 flex justify-around">
           <button
             onClick={() => setCurrentPage('home')}
