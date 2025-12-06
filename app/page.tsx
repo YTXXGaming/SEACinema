@@ -6,7 +6,7 @@ import { Heart, Calendar, MapPin, Clock, Star, Ticket, ChevronLeft, QrCode, Down
 // ============================================
 // MOCK DATABASE - Eventi
 // ============================================
-const EVENTS_DB = [
+const EVENTS_DB: AppEvent = [ 
   {
     id: 1,
     title: "Zauvijek Tvoja",
