@@ -6,7 +6,7 @@ import { Heart, Calendar, MapPin, Clock, Star, Ticket, ChevronLeft, QrCode, Down
 // ============================================
 // MOCK DATABASE - Eventi
 // ============================================
-const EVENTS_DB: AppEvent = [ 
+const EVENTS_DB: AppEvent[] = [
   {
     id: 1,
     title: "Zauvijek Tvoja",
@@ -173,13 +173,13 @@ const App = () => {
           ))}
         </div>
 
-        {/* Events Grid */}
+  {/* Events Grid */}
 <div className="p-4 grid gap-4 pb-24">
   {filteredEvents.map((event: AppEvent) => (
     <div
       key={event.id}
       onClick={() => {
-        setSelectedEvent({...event});  // ⭐ Spread to match AppEvent type
+        setSelectedEvent(event as AppEvent);
         setCurrentPage('details');
       }}
       className="bg-gray-800 rounded-2xl overflow-hidden shadow-xl hover:shadow-pink-500/20 transition-all cursor-pointer"
