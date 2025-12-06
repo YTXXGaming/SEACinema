@@ -476,7 +476,7 @@ const App: React.FC = () => {
                 value={formData.date}
                 onChange={(e) => setFormData({...formData, date: e.target.value})}
                 min={selectedAppEvent.date}
-                className="w-full bg-gray-800 text-white rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                className="w-full max-w-full bg-gray-800 text-white rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-500"
               />
             </div>
 
